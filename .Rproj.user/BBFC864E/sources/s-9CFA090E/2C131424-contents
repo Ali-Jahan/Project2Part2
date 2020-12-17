@@ -1,0 +1,199 @@
+---
+title: "Project 2: Project2 Tutorial"
+author: "Ali Jahangirnezhad"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Project2 Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\Vignett
+  eEncoding{UTF-8}
+---
+```{r, include = FALSE}
+library(dplyr)
+library(class)
+library(kableExtra)
+library(palmerpenguins)
+library(randomForest)
+library(ggplot2)
+```
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, include = FALSE}
+library(Project2)
+```
+# Introduction
+This is a R package which implements T-test, Linear regression, K-Neighrest neighbors with cross validation, and Random Forest with cross validation. As a part of this, you also have access to the gapminder data set (check documentation for more information).
+# Installation instructions
+Use the following command to install the package:
+
+```{r, eval = FALSE}
+devtools::install_github("Ali-Jahan/Project2", build_vignettes = TRUE, build_opts = c())
+```
+Load the package using:
+```{r, eval = FALSE}
+library(Project2)
+```
+Use the following to load the vignette:
+```{r, eval = FALSE}
+# View the html
+help(package = "Project2", help_type = "html")
+# view in browser
+utils::browseVignettes(package = "Project2")
+```
+
+# T-test
+Retrieving data:
+```{r}
+test_data <- my_gapminder$lifeExp
+mu <- 60
+```
+## Performing T-tests, interpretting results with $\alpha = 0.05$
+## two.sided
+$H_0 : \mu = 60,$
+$H_a : \mu \neq 60$
+```{r}
+my_t.test(test_data, alternative = "two.sided", mu)
+```
+**Interpretation:** There is not enough evidence to reject the null hypothesis, which means there is NO evidence to support the claim that the mean is NOT 60.
+
+## Less
+$H_0 : \mu = 60,$
+$H_a : \mu < 60$
+```{r}
+my_t.test(test_data, alternative = "less", mu)
+```
+**Interpretation:** There is enough evidence to reject the null hypothesis in favor of the alternative, which means there IS enough evidence to say the mean of the data is less than 60.
+
+## Greater
+$H_0 : \mu = 60,$
+$H_a : \mu > 60$
+```{r}
+my_t.test(test_data, alternative = "greater", mu)
+```
+**Interpretation:** There is not enough evidence to reject the null hypothesis, which means there is NO evidence that the mean is greater than 60. 
+
+# Linear Model Fitting
+
+In this section, we will demonstrate a regression using gapminder's \code{lifeExp} as response, and \code{gdpPercap} and \code{continent} as explanatory.  
+
+```{r}
+# define response and explanatory
+y <- my_gapminder$lifeExp
+x1 <- my_gapminder$gdpPercap
+x2 <- my_gapminder$continent
+# data frame for the function input
+df <- data.frame("lifeExp" = y, "gdpPercap" = x1, "continent" = x2)
+# define formula
+formula <- (lifeExp ~ gdpPercap + continent)
+# perform linear model fitting
+result <- my_lm(df, formula)
+result$coefficients
+```
+**gdpPercap Coefficient** displayed above is very small, suggesting that gdp per capita is not a good estimator (predictor) for life expectancy (gdpPercap doesn't cause change in life expectancy).
+
+
+# k-Neighrest Neighbours Tutorial using PalmerPenguins
+
+##Load the Libraries:**
+```{r, eval = FALSE} 
+library(dplyr)
+library(class)
+library(kableExtra)
+library(palmerpenguins)
+```
+##Using my_knn_cv with 5 cv folds and 1 to 10 neighrest neighbors
+```{r}
+# data set 
+data(package = "palmerpenguins")
+# set random seed for reproducibility 
+set.seed(1234)
+# omit NAs
+penguins <- na.omit(penguins)
+# constructing the input data frame using only the 
+# columns of interest
+train_ <- data.frame("bill_length_mm" = penguins$bill_length_mm, 
+                     "bill_depth_mm" = penguins$bill_depth_mm, 
+                     "flipper_length_mm" = penguins$flipper_length_mm,
+                     "body_mass_g" = penguins$body_mass_g)
+# constructing the true value of class data
+cl_ <- data.frame("species" = penguins$species)
+# vector for cv errors
+cv_errors <- numeric(10)
+# vector for misclassification errors
+mc_errors <- numeric(10)
+# 5 fold cross validation
+k_cv = 5
+# iterate k_nn from 1 to 10 and record results
+for (i in 1:10) {
+  output <- my_knn_cv(train_, cl_, i, k_cv)
+  cv_errors[i] <- output$cv_err
+  mc_error <- sum(output$class != cl_[, 1]) / nrow(cl_)
+  mc_errors[i] <- mc_error
+}
+# using the function with k_cv = 5 and k_nn = 5
+output_k_5 <- my_knn_cv(train_, cl_, 5, 5)
+# misclassification error for class vs true (k_nn = 5)
+misclass_5 <- sum(output_k_5$class != cl_[, 1]) / nrow(cl_)
+misclass_5
+# producing the table
+df_table <- data.frame("k_nn" = c(1:10),
+                       "cv_error" = cv_errors,
+                       "misclassification_error" = mc_errors)
+kable_styling(kable(df_table))
+```
+**Based on CV error and Misclassification Error** the model with 1 neighrest neighbor and 5 fold cross validation is superior, as the errors are lower. 
+
+**In Practice:** In practice, I would recommend using a model with sufficient cv folds, but as for choosing a proper k for k-Neighres Neighbors, it's best to think about the actual problem. Specific domain information may come in handy here. The process of cross validation consists of dividing the data set to several sets randomly, and in each iteration use all the folds except for 1 in order to train the model, and use that 1 for testing. Cross-validation helps with avoiding overfitting. K-NN is a classification algorithm, where each point is classified by its K closest points. 
+
+
+# Random Forest (my_rf_cv)
+**Required package**
+```{r, eval = FALSE}
+library(randomForest)
+library(ggplot2)
+```
+
+```{r}
+# matrix to hold all results
+results <- matrix(NA, nrow = 30, ncol = 3)
+# counter to keep track of columns in matrix
+counter <- 1
+# iterating through 3 k values
+for (k in c(2, 5, 10)) {
+  # numeric holding MSE errors
+  mse_vector <- numeric(30)
+  for (i in 1:30) {
+    mse <- my_rf_cv(k)
+    mse_vector[i] <- mse
+  }
+  # populate matrix
+  results[, counter] <- mse_vector
+  counter <- counter + 1
+  # create title for plot
+  title <- paste("my_rf_cv, K =", k, sep = " ")
+  # convert to data frame
+  df <- data.frame("MSE" = mse_vector)
+  # create box plot
+  plt <- ggplot(data = df, aes(x = "", y = MSE)) + 
+          geom_boxplot(notch=FALSE) + 
+          labs(title = title) + 
+          xlab("")
+  print(plt)
+}
+# means and standard deviations 
+means <- c(mean(results[, 1]), mean(results[, 2]), mean(results, 3))
+stds <- c(sd(results[, 1]), sd(results[, 2]), sd(results[, 3]))
+# producing the table
+df_table <- data.frame("k" = c(2, 5, 10),
+                       "mean" = means,
+                       "std" = stds)
+kable_styling(kable(df_table))
+
+```
+
+Based on these results, we can see that a random forest with 5 fold cross validation works better than random forest with 2 fold cross validation. But the difference between 5 fold and 10 fold cross validation is little. Mean squared error of 5 fold cross validations is a little lower (the mean), but its standard deviation is higher, which indicates a trade-off between the two. In general, we can say that higher k results in less error and standard deviation. 

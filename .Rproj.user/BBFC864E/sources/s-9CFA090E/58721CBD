@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1608217344886.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "58721CBD",
+    "lastKnownWriteTime" : 1608217416,
+    "last_content_update" : 1608217416034,
+    "path" : "~/00_COURSES_00/STAT 302/Projects/Project2Part2/Code/my_rf_cv.R",
+    "project_path" : "Code/my_rf_cv.R",
+    "properties" : {
+        "cursorPosition" : "13,17",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

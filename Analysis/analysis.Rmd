@@ -1,0 +1,91 @@
+---
+title: "analysis"
+author: "Ali Jahangirnezhad"
+date: "12/17/2020"
+output: html_document
+---
+
+```{r, include = FALSE}
+library(dplyr)
+library(class)
+library(kableExtra)
+library(palmerpenguins)
+library(randomForest)
+library(ggplot2)
+```
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, include = FALSE}
+library(Project2)
+```
+
+# Read in data
+
+```{r}
+# set working directory to root
+setwd("..")
+rootPath <- getwd()
+# read penguins
+penguins <- read.csv(paste0(rootPath, "/Data/my_penguins.csv"))
+# omit NAs
+penguins <- na.omit(penguins)
+# read gapminder
+gapminder_new <- read.csv(paste0(rootPath, "/Data/my_gapminder.csv"))
+# get the function ready
+source(paste0(rootPath, "/Code/my_rf_cv.R"))
+# matrix to hold all results
+results <- matrix(NA, nrow = 30, ncol = 3)
+# counter to keep track of columns in matrix
+counter <- 1
+for (k in c(2, 5, 10)) {
+  # numeric holding MSE errors
+  mse_vector <- numeric(30)
+  for (i in 1:30) {
+    mse <- my_rf_cv(k)
+    mse_vector[i] <- mse
+  }
+  # populate matrix
+  results[, counter] <- mse_vector
+  counter <- counter + 1
+  # create title for plot
+  title <- paste("my_rf_cv, K =", k, sep = " ")
+  # convert to data frame
+  df <- data.frame("MSE" = mse_vector)
+  # create box plot
+  plt <- ggplot(data = df, aes(x = "", y = MSE)) + 
+          geom_boxplot(notch=FALSE) + 
+          labs(title = title) + 
+          xlab("")
+  fileName <- paste0("BoxPlot_k_", k)
+  filePath <- paste0(rootPath, "/Output/Figures/", fileName, ".png")
+  ggsave(filename = filePath, plot = plt)
+}
+# means and standard deviations 
+means <- c(mean(results[, 1]), mean(results[, 2]), mean(results, 3))
+stds <- c(sd(results[, 1]), sd(results[, 2]), sd(results[, 3]))
+# table path
+tablePath <- paste0(rootPath, "/Output/Results/Table.rds")
+# producing the table
+df_table <- data.frame("k" = c(2, 5, 10),
+                       "mean" = means,
+                       "std" = stds)
+my_table <- kable_styling(kable(df_table))
+# save table
+saveRDS(my_table, tablePath)
+# create the output data frame
+df_output <- matrix(NA, nrow = 30, ncol = 3)
+colnames(df_output) <- c(2, 5, 10)
+df_output[, 1] <- results[, 1]
+df_output[, 2] <- results[, 2]
+df_output[, 3] <- results[, 3]
+df_output <- as.data.frame(df_output)
+df_path <- paste0(rootPath, "/Output/Results/Results.csv")
+# save the data frame to the path 
+write.csv(df_output, df_path)
+```
+
